@@ -10,6 +10,7 @@ const groupRoutes = require('./routes/groups');
 const insightRoutes = require('./routes/insights');
 const smartRoutes = require('./routes/smart');
 const categoryRoutes = require('./routes/categories');
+const extraRoutes = require('./routes/extra');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/smart', smartRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/extra', extraRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));

@@ -83,15 +83,16 @@ exports.getFriends = async (req, res) => {
 exports.searchUsers = async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.status(400).json({ error: 'Search query required' });
 
-    const users = await User.find({
-      $or: [
+    const query = { _id: { $ne: req.userId } };
+    if (q) {
+      query.$or = [
         { name: { $regex: q, $options: 'i' } },
         { email: { $regex: q, $options: 'i' } }
-      ],
-      _id: { $ne: req.userId }
-    }).select('name email').limit(10);
+      ];
+    }
+
+    const users = await User.find(query).select('name email').limit(20);
 
     res.json(users);
   } catch (err) {

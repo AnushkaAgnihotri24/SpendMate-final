@@ -21,6 +21,7 @@ import Recommended from "@/pages/onboarding/Recommended";
 import Success from "@/pages/onboarding/Success";
 
 // App Pages
+import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import AddExpense from "@/pages/AddExpense";
 import SharedSplit from "@/pages/SharedSplit";
@@ -36,6 +37,11 @@ const queryClient = new QueryClient();
 // Protected route wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isCompleted } = useOnboarding();
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    return <Navigate to="/auth" replace />;
+  }
   
   if (!isCompleted) {
     return <Navigate to="/onboarding" replace />;
@@ -47,6 +53,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Onboarding redirect
 const OnboardingRedirect: React.FC = () => {
   const { isCompleted, currentStep } = useOnboarding();
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    return <Navigate to="/auth" replace />;
+  }
   
   if (isCompleted) {
     return <Navigate to="/dashboard" replace />;
@@ -95,50 +106,16 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/ledger" element={<Ledger />} />
+        <Route path="/add-expense" element={<AddExpense />} />
+        <Route path="/shared-split" element={<SharedSplit />} />
+        <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/monthly-review" element={<MonthlyReview />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       
-      {/* Full-screen pages */}
-      <Route
-        path="/add-expense"
-        element={
-          <ProtectedRoute>
-            <AddExpense />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/shared-split"
-        element={
-          <ProtectedRoute>
-            <SharedSplit />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/subscriptions"
-        element={
-          <ProtectedRoute>
-            <Subscriptions />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/monthly-review"
-        element={
-          <ProtectedRoute>
-            <MonthlyReview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
-      
+      {/* Auth */}
+      <Route path="/auth" element={<Auth />} />
+
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

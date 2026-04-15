@@ -32,9 +32,8 @@ export const Sidebar: React.FC = () => {
     <aside className="hidden md:flex flex-col w-64 h-screen bg-card border-r border-border fixed left-0 top-0">
       <div className="p-6">
         <h1 className="text-xl font-display font-bold text-gradient">
-          Student Finance
+          SpendMate
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Companion</p>
       </div>
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">

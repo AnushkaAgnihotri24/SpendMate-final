@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { mockMonthlyReview, categories } from '@/data/mockData';
+import { categories } from '@/data/mockData';
 import { ArrowLeft, ChevronRight, Share2, Trophy, Flame, Handshake } from 'lucide-react';
 import { format } from 'date-fns';
+import api from '@/lib/api';
 
 const slides = [
   'welcome',
@@ -20,6 +21,39 @@ export const MonthlyReview: React.FC = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [stats, setStats] = useState({
+    totalSpent: 0,
+    totalSaved: 0,
+    topCategory: { name: '-', amount: 0, percentage: 0 },
+    bestSavingDay: { date: new Date(), saved: 0 },
+    highestSharedExpenseDay: { date: new Date(), amount: 0 },
+    achievements: [],
+    monthlyScore: 0,
+    dailySpendTrend: []
+  });
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      try {
+        const res = await api.get('/insights/monthly');
+        const iData = res.data;
+        if (iData && typeof iData.total === 'number') {
+          setStats(prev => ({
+            ...prev,
+            totalSpent: iData.total || 0,
+            topCategory: {
+              name: iData.topCategory || prev.topCategory.name,
+              amount: iData.categories?.[iData.topCategory] || prev.topCategory.amount,
+              percentage: iData.total && iData.topCategory ? Math.round(((iData.categories[iData.topCategory] || 0) / iData.total) * 100) : prev.topCategory.percentage
+            }
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch monthly insights', err);
+      }
+    };
+    fetchInsights();
+  }, []);
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1 && !isAnimating) {
@@ -74,7 +108,7 @@ export const MonthlyReview: React.FC = () => {
           <div className={slideClass}>
             <p className="text-lg text-primary-foreground/80 mb-2">This month you spent</p>
             <h1 className="text-5xl font-display font-bold text-primary-foreground mb-4">
-              ₹{mockMonthlyReview.totalSpent.toLocaleString()}
+              ₹{stats.totalSpent.toLocaleString()}
             </h1>
             <p className="text-primary-foreground/70">
               Across all categories
@@ -83,19 +117,19 @@ export const MonthlyReview: React.FC = () => {
         );
 
       case 'top-category':
-        const topCat = categories.find(c => c.name === mockMonthlyReview.topCategory.name);
+        const topCat = categories.find(c => c.name === stats.topCategory.name);
         return (
           <div className={slideClass}>
             <p className="text-lg text-primary-foreground/80 mb-4">Your top spending category</p>
             <div className="text-7xl mb-4">{topCat?.icon || '📦'}</div>
             <h2 className="text-3xl font-display font-bold text-primary-foreground mb-2">
-              {mockMonthlyReview.topCategory.name}
+              {stats.topCategory.name}
             </h2>
             <p className="text-2xl font-bold text-primary-foreground/90">
-              ₹{mockMonthlyReview.topCategory.amount.toLocaleString()}
+              ₹{stats.topCategory.amount.toLocaleString()}
             </p>
             <p className="text-primary-foreground/70 mt-2">
-              {mockMonthlyReview.topCategory.percentage}% of total spending
+              {stats.topCategory.percentage}% of total spending
             </p>
           </div>
         );
@@ -106,10 +140,10 @@ export const MonthlyReview: React.FC = () => {
             <p className="text-lg text-primary-foreground/80 mb-4">Your best saving day was</p>
             <div className="text-6xl mb-4">💪</div>
             <h2 className="text-3xl font-display font-bold text-primary-foreground mb-2">
-              {format(mockMonthlyReview.bestSavingDay.date, 'MMMM d')}
+              {format(stats.bestSavingDay.date, 'MMMM d')}
             </h2>
             <p className="text-2xl font-bold text-primary-foreground/90">
-              Saved ₹{mockMonthlyReview.bestSavingDay.saved}
+              Saved ₹{stats.bestSavingDay.saved}
             </p>
           </div>
         );
@@ -120,10 +154,10 @@ export const MonthlyReview: React.FC = () => {
             <p className="text-lg text-primary-foreground/80 mb-4">Biggest shared expense day</p>
             <div className="text-6xl mb-4">👥</div>
             <h2 className="text-3xl font-display font-bold text-primary-foreground mb-2">
-              {format(mockMonthlyReview.highestSharedExpenseDay.date, 'MMMM d')}
+              {format(stats.highestSharedExpenseDay.date, 'MMMM d')}
             </h2>
             <p className="text-2xl font-bold text-primary-foreground/90">
-              ₹{mockMonthlyReview.highestSharedExpenseDay.amount.toLocaleString()}
+              ₹{stats.highestSharedExpenseDay.amount.toLocaleString()}
             </p>
             <p className="text-primary-foreground/70 mt-2">
               spent with friends
@@ -137,7 +171,7 @@ export const MonthlyReview: React.FC = () => {
             <p className="text-lg text-primary-foreground/80 mb-4">Total savings this month</p>
             <div className="text-6xl mb-4">🎉</div>
             <h1 className="text-5xl font-display font-bold text-primary-foreground mb-4">
-              ₹{mockMonthlyReview.totalSaved.toLocaleString()}
+              ₹{stats.totalSaved.toLocaleString()}
             </h1>
             <p className="text-primary-foreground/70">
               Keep up the great work!
@@ -150,7 +184,7 @@ export const MonthlyReview: React.FC = () => {
           <div className={slideClass}>
             <p className="text-lg text-primary-foreground/80 mb-6">You earned these badges!</p>
             <div className="space-y-4 w-full max-w-xs">
-              {mockMonthlyReview.achievements.map((achievement, index) => (
+              {stats.achievements.map((achievement, index) => (
                 <div
                   key={achievement.id}
                   className="bg-white/10 backdrop-blur rounded-2xl p-4 flex items-center gap-4"
@@ -190,13 +224,13 @@ export const MonthlyReview: React.FC = () => {
                   fill="none"
                   stroke="white"
                   strokeWidth="12"
-                  strokeDasharray={`${(mockMonthlyReview.monthlyScore / 100) * 440} 440`}
+                  strokeDasharray={`${(stats.monthlyScore / 100) * 440} 440`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-5xl font-display font-bold text-primary-foreground">
-                  {mockMonthlyReview.monthlyScore}
+                  {stats.monthlyScore}
                 </span>
               </div>
             </div>

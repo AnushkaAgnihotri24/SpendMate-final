@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GoalCard } from '@/components/ui/GoalCard';
-import { mockGoals } from '@/data/mockData';
 import { ArrowLeft, Plus, Target, Calendar, X } from 'lucide-react';
 import { format } from 'date-fns';
+import api from '@/lib/api';
 
 export const Goals: React.FC = () => {
   const navigate = useNavigate();
@@ -14,16 +14,28 @@ export const Goals: React.FC = () => {
   const [title, setTitle] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
+  const [goals, setGoals] = useState<any[]>([]);
 
-  const totalSaved = mockGoals.reduce((sum, g) => sum + g.currentAmount, 0);
-  const totalTarget = mockGoals.reduce((sum, g) => sum + g.targetAmount, 0);
+  React.useEffect(() => {
+    api.get('/extra/goals').then(res => setGoals(res.data)).catch(console.error);
+  }, []);
 
-  const handleAddGoal = () => {
-    // Mock add
-    setShowAddGoal(false);
-    setTitle('');
-    setTargetAmount('');
-    setTargetDate('');
+  const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
+  const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
+
+  const handleAddGoal = async () => {
+    try {
+      const res = await api.post('/extra/goals', { 
+        title, 
+        targetAmount: Number(targetAmount), 
+        targetDate 
+      });
+      setGoals([res.data, ...goals]);
+      setShowAddGoal(false);
+      setTitle('');
+      setTargetAmount('');
+      setTargetDate('');
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -147,7 +159,7 @@ export const Goals: React.FC = () => {
         {/* Goals List */}
         <div className="space-y-4">
           <h2 className="font-semibold text-foreground">Active Goals</h2>
-          {mockGoals.map((goal) => (
+          {goals.map((goal) => (
             <GoalCard
               key={goal.id}
               title={goal.title}
@@ -159,7 +171,7 @@ export const Goals: React.FC = () => {
           ))}
         </div>
 
-        {mockGoals.length === 0 && !showAddGoal && (
+        {goals.length === 0 && !showAddGoal && (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-muted-foreground" />

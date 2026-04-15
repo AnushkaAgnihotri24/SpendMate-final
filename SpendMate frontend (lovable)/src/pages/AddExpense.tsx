@@ -6,6 +6,7 @@ import { CategoryChip } from '@/components/ui/CategoryChip';
 import { categories, subcategories } from '@/data/mockData';
 import { ArrowLeft, Sparkles, Send, Calendar, Clock, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import api from '@/lib/api';
 
 export const AddExpense: React.FC = () => {
   const navigate = useNavigate();
@@ -56,9 +57,28 @@ export const AddExpense: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
-    // Mock save - would normally save to state/backend
-    navigate('/dashboard');
+  const handleSave = async () => {
+    try {
+      const isManual = activeTab === 'manual';
+      const expenseAmount = isManual ? Number(amount) : aiParsed?.amount;
+      const expenseCategory = isManual ? selectedCategory : aiParsed?.category;
+      const expenseDescription = isManual ? item : aiParsed?.item;
+      
+      let expenseDate = new Date();
+      if (isManual && date) {
+        expenseDate = new Date(`${date}T${time || '00:00'}`);
+      }
+
+      await api.post('/expenses', {
+        amount: expenseAmount,
+        category: expenseCategory || 'other',
+        description: expenseDescription || 'Expense',
+        date: expenseDate.toISOString(),
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Failed to save expense:', err);
+    }
   };
 
   // Time-based category suggestions

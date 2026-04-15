@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { mockFriends, mockSharedExpenses } from '@/data/mockData';
 import { ArrowLeft, Plus, Users, Check, Send, X } from 'lucide-react';
 import { format } from 'date-fns';
+import api from '@/lib/api';
 
 interface Participant {
   id: string;
@@ -21,8 +21,10 @@ export const SharedSplit: React.FC = () => {
     { id: 'me', name: 'Me', avatar: '😊', share: 0 },
   ]);
   const [showAddFriend, setShowAddFriend] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [sharedExpenses, setSharedExpenses] = useState<any[]>([]);
 
-  const addFriend = (friend: typeof mockFriends[0]) => {
+  const addFriend = (friend: any) => {
     if (!participants.find(p => p.id === friend.id)) {
       setParticipants([...participants, { ...friend, share: 0 }]);
     }
@@ -51,12 +53,49 @@ export const SharedSplit: React.FC = () => {
   const totalShares = participants.reduce((sum, p) => sum + p.share, 0);
   const isBalanced = totalShares === parseFloat(totalAmount);
 
-  const handleSave = () => {
-    // Mock save
-    setShowAddExpense(false);
-    setTitle('');
-    setTotalAmount('');
-    setParticipants([{ id: 'me', name: 'Me', avatar: '😊', share: 0 }]);
+  const fetchShared = () => api.get('/extra/shared').then(res => setSharedExpenses(res.data)).catch(console.error);
+
+  React.useEffect(() => {
+    fetchShared();
+    api.get('/friends/search')
+       .then(res => {
+         const userList = res.data.map((u: any) => ({
+           id: u._id,
+           name: u.name,
+           avatar: '👤'
+         }));
+         setFriends(userList);
+       })
+       .catch(console.error);
+  }, []);
+
+  const handleSettle = async (id: string) => {
+    try {
+      await api.put(`/extra/shared/${id}/settle`);
+      fetchShared();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSave = async () => {
+    try {
+      const parts = participants.map(p => ({ 
+        name: p.name, 
+        share: p.share, 
+        avatar: p.avatar,
+        friendId: p.id !== 'me' && p.id && !p.id.startsWith('f') ? p.id : undefined 
+      }));
+      const res = await api.post('/extra/shared', {
+        title,
+        totalAmount: Number(totalAmount),
+        yourShare: myShare,
+        participants: parts
+      });
+      setSharedExpenses([res.data, ...sharedExpenses]);
+      setShowAddExpense(false);
+      setTitle('');
+      setTotalAmount('');
+      setParticipants([{ id: 'me', name: 'Me', avatar: '😊', share: 0 }]);
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -184,7 +223,7 @@ export const SharedSplit: React.FC = () => {
                 <div className="mt-3 p-3 bg-secondary rounded-xl animate-scale-in">
                   <p className="text-sm font-medium text-foreground mb-2">Add Friend</p>
                   <div className="space-y-2">
-                    {mockFriends
+                    {friends
                       .filter(f => !participants.find(p => p.id === f.id))
                       .map(friend => (
                         <button
@@ -243,7 +282,7 @@ export const SharedSplit: React.FC = () => {
             <div className="space-y-4">
               <h2 className="font-semibold text-foreground">Recent Splits</h2>
               
-              {mockSharedExpenses.map((expense) => (
+              {sharedExpenses.map((expense) => (
                 <div key={expense.id} className="card-elevated p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -289,9 +328,21 @@ export const SharedSplit: React.FC = () => {
 
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <span className="text-muted-foreground">Your Share</span>
-                    <span className="text-lg font-display font-bold text-primary">
-                      ₹{expense.yourShare}
-                    </span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-display font-bold text-primary">
+                        ₹{expense.yourShare}
+                      </span>
+                      {!expense.settled && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleSettle(expense.id)}
+                          className="h-8 text-xs font-medium border-success text-success hover:bg-success hover:text-white"
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Settle
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

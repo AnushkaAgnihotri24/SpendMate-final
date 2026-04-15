@@ -63,8 +63,15 @@ export const Settings: React.FC = () => {
           description: 'Start fresh with new settings',
           action: 'button',
           onClick: () => {
-            localStorage.clear();
-            navigate('/onboarding');
+            const userStr = localStorage.getItem('currentUser');
+            let prefix = '';
+            if (userStr) {
+               try { const user = JSON.parse(userStr); prefix = `${user.id}_`; } catch(e){}
+            }
+            localStorage.removeItem(`${prefix}onboardingData`);
+            localStorage.removeItem(`${prefix}onboardingStep`);
+            localStorage.removeItem(`${prefix}onboardingCompleted`);
+            window.location.href = '/onboarding';
           },
         },
       ],
@@ -182,14 +189,21 @@ export const Settings: React.FC = () => {
         ))}
 
         {/* Logout */}
-        <button className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors">
+        <button 
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.href = '/auth';
+          }}
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Log Out</span>
         </button>
 
         {/* Version */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Student Finance Companion v1.0.0
+          SpendMate v1.0.0
         </p>
       </div>
     </div>

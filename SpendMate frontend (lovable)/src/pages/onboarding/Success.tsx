@@ -42,7 +42,7 @@ export const Success: React.FC = () => {
           You're All Set, {data.profileName}!
         </h1>
         <p className="text-muted-foreground">
-          Your finance companion is ready to help you save
+          SpendMate is ready to help you save
         </p>
       </div>
 

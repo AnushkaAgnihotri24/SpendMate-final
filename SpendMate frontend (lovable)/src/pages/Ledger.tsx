@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { LedgerEntry } from '@/components/ui/LedgerEntry';
-import { mockLedger } from '@/data/mockData';
 import { ArrowLeft, Plus, TrendingDown, TrendingUp } from 'lucide-react';
+import api from '@/lib/api';
 
 export const Ledger: React.FC = () => {
   const navigate = useNavigate();
@@ -16,17 +16,57 @@ export const Ledger: React.FC = () => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [ledger, setLedger] = useState<{ owe: any[], owedToMe: any[] }>({ owe: [], owedToMe: [] });
+  const [friends, setFriends] = useState<any[]>([]);
 
-  const totalOwed = mockLedger.owe.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
-  const totalOwedToMe = mockLedger.owedToMe.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
+  const fetchLedger = async () => {
+    try {
+      const res = await api.get('/extra/ledger');
+      const owe = res.data.filter((e: any) => e.type === 'owe');
+      const owedToMe = res.data.filter((e: any) => e.type === 'owedToMe');
+      setLedger({ owe, owedToMe });
+    } catch (e) { console.error(e); }
+  };
+
+  React.useEffect(() => {
+    fetchLedger();
+    api.get('/friends/search')
+       .then(res => {
+         const userList = res.data.map((u: any) => ({
+           id: u._id,
+           name: u.name,
+           avatar: '👤'
+         }));
+         setFriends(userList);
+       })
+       .catch(console.error);
+  }, []);
+
+  const totalOwed = ledger.owe.filter((e: any) => e.status === 'pending').reduce((sum: number, e: any) => sum + e.amount, 0);
+  const totalOwedToMe = ledger.owedToMe.filter((e: any) => e.status === 'pending').reduce((sum: number, e: any) => sum + e.amount, 0);
   const netBalance = totalOwedToMe - totalOwed;
 
-  const handleAddEntry = () => {
-    // Mock add
-    setShowAddEntry(false);
-    setName('');
-    setAmount('');
-    setReason('');
+  const handleAddEntry = async () => {
+    try {
+      await api.post('/extra/ledger', {
+        type: entryType,
+        name,
+        amount: Number(amount),
+        reason
+      });
+      fetchLedger();
+      setShowAddEntry(false);
+      setName('');
+      setAmount('');
+      setReason('');
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSettle = async (id: string) => {
+    try {
+      await api.put(`/extra/ledger/${id}/settle`);
+      fetchLedger();
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -120,13 +160,26 @@ export const Ledger: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Person's name"
-                className="input-field"
-              />
+              {friends.length > 0 ? (
+                <select
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-field bg-background text-foreground"
+                >
+                  <option value="" disabled>Select a friend</option>
+                  {friends.map(f => (
+                    <option key={f.id} value={f.name}>{f.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Person's name"
+                  className="input-field"
+                />
+              )}
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
                 <input
@@ -183,27 +236,27 @@ export const Ledger: React.FC = () => {
           </TabsList>
 
           <TabsContent value="owe" className="space-y-3">
-            {mockLedger.owe.map((entry) => (
+            {ledger.owe.map((entry: any) => (
               <LedgerEntry
                 key={entry.id}
                 {...entry}
                 date={new Date(entry.date)}
                 status={entry.status as 'pending' | 'settled'}
                 type="owe"
-                onSettle={() => {}}
+                onSettle={() => handleSettle(entry.id)}
               />
             ))}
           </TabsContent>
 
           <TabsContent value="owedToMe" className="space-y-3">
-            {mockLedger.owedToMe.map((entry) => (
+            {ledger.owedToMe.map((entry: any) => (
               <LedgerEntry
                 key={entry.id}
                 {...entry}
                 date={new Date(entry.date)}
                 status={entry.status as 'pending' | 'settled'}
                 type="owedToMe"
-                onSettle={() => {}}
+                onSettle={() => handleSettle(entry.id)}
                 onRemind={() => {}}
               />
             ))}

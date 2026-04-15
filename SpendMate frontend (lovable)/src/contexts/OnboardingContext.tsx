@@ -55,35 +55,46 @@ const defaultData: OnboardingData = {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
+const getUserKey = (key: string) => {
+  const userStr = localStorage.getItem('currentUser');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      return `${user.id}_${key}`;
+    } catch(e) {}
+  }
+  return key; // fallback
+};
+
 export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<OnboardingData>(() => {
-    const saved = localStorage.getItem('onboardingData');
+    const saved = localStorage.getItem(getUserKey('onboardingData'));
     return saved ? JSON.parse(saved) : defaultData;
   });
   const [currentStep, setCurrentStep] = useState(() => {
-    const saved = localStorage.getItem('onboardingStep');
+    const saved = localStorage.getItem(getUserKey('onboardingStep'));
     return saved ? parseInt(saved) : 1;
   });
   const [isCompleted, setIsCompleted] = useState(() => {
-    return localStorage.getItem('onboardingCompleted') === 'true';
+    return localStorage.getItem(getUserKey('onboardingCompleted')) === 'true';
   });
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => {
       const newData = { ...prev, ...updates };
-      localStorage.setItem('onboardingData', JSON.stringify(newData));
+      localStorage.setItem(getUserKey('onboardingData'), JSON.stringify(newData));
       return newData;
     });
   };
 
   const handleSetCurrentStep = (step: number) => {
     setCurrentStep(step);
-    localStorage.setItem('onboardingStep', step.toString());
+    localStorage.setItem(getUserKey('onboardingStep'), step.toString());
   };
 
   const completeOnboarding = () => {
     setIsCompleted(true);
-    localStorage.setItem('onboardingCompleted', 'true');
+    localStorage.setItem(getUserKey('onboardingCompleted'), 'true');
   };
 
   return (

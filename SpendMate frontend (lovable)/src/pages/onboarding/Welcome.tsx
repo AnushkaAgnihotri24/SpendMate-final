@@ -27,9 +27,8 @@ export const Welcome: React.FC = () => {
           <span className="text-4xl">💰</span>
         </div>
         <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-          Student Finance
+          SpendMate
         </h1>
-        <p className="text-lg text-muted-foreground">Companion</p>
       </div>
 
       <p className="text-center text-muted-foreground mb-8">
