@@ -1,0 +1,192 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
+import { mockSubscriptions } from '@/data/mockData';
+import { ArrowLeft, Plus, CreditCard, X } from 'lucide-react';
+
+export const Subscriptions: React.FC = () => {
+  const navigate = useNavigate();
+  const [showAddSub, setShowAddSub] = useState(false);
+  
+  // Form state
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [renewalDate, setRenewalDate] = useState('');
+  const [icon, setIcon] = useState('📦');
+
+  const totalMonthly = mockSubscriptions.reduce((sum, s) => sum + s.amount, 0);
+  const dailyContribution = mockSubscriptions.reduce((sum, s) => sum + s.dailyContribution, 0);
+
+  const iconOptions = ['🎬', '🎵', '📦', '💪', '📚', '🎮', '☁️', '📱'];
+
+  const handleAddSubscription = () => {
+    // Mock add
+    setShowAddSub(false);
+    setName('');
+    setAmount('');
+    setRenewalDate('');
+    setIcon('📦');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-xl hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-lg font-display font-bold text-foreground">Subscriptions</h1>
+          </div>
+          <Button
+            onClick={() => setShowAddSub(true)}
+            size="sm"
+            className="btn-primary"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4 max-w-2xl mx-auto pb-24">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="card-elevated p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CreditCard className="w-4 h-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Monthly Total</span>
+            </div>
+            <p className="text-2xl font-display font-bold text-foreground">
+              ₹{totalMonthly.toLocaleString()}
+            </p>
+          </div>
+          <div className="card-elevated p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm text-muted-foreground">Daily Set-aside</span>
+            </div>
+            <p className="text-2xl font-display font-bold text-primary">
+              ₹{dailyContribution.toFixed(0)}/day
+            </p>
+          </div>
+        </div>
+
+        {/* Add Subscription Form */}
+        {showAddSub && (
+          <div className="card-elevated p-5 mb-6 animate-scale-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Add Subscription</h3>
+              <button
+                onClick={() => setShowAddSub(false)}
+                className="p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Choose Icon
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {iconOptions.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setIcon(emoji)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                        icon === emoji
+                          ? 'bg-primary/20 ring-2 ring-primary'
+                          : 'bg-muted hover:bg-secondary'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Subscription Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Netflix, Spotify"
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Monthly Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    className="input-field pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Next Renewal Date
+                </label>
+                <input
+                  type="date"
+                  value={renewalDate}
+                  onChange={(e) => setRenewalDate(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <Button
+                onClick={handleAddSubscription}
+                disabled={!name || !amount || !renewalDate}
+                className="w-full btn-primary"
+              >
+                Add Subscription
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Subscriptions List */}
+        <div className="space-y-3">
+          <h2 className="font-semibold text-foreground">Active Subscriptions</h2>
+          {mockSubscriptions.map((sub) => (
+            <SubscriptionCard
+              key={sub.id}
+              name={sub.name}
+              amount={sub.amount}
+              renewalDate={new Date(sub.renewalDate)}
+              icon={sub.icon}
+              dailyContribution={sub.dailyContribution}
+            />
+          ))}
+        </div>
+
+        {/* Tip */}
+        <div className="mt-6 p-4 bg-primary/10 rounded-2xl border border-primary/20">
+          <p className="text-sm text-foreground">
+            💡 <strong>Tip:</strong> Setting aside ₹{dailyContribution.toFixed(0)} daily helps cover all your subscriptions without surprises!
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Subscriptions;
